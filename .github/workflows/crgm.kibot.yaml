@@ -1,0 +1,229 @@
+# CRG Makes
+#
+# @brief Common output definitions for Kibot
+# @date 5/25/25
+# @author cyberreefguru
+# (c) CRG Makes 2025
+
+kibot:
+  version: 1
+
+global:
+  output: '%f-%i%I%v-%r.%x'
+  environment:
+    extra_os: 
+      - KICAD_USER_LIBRARY: ${GITHUB_WORKSPACE}/working/kicad-library # only works in git
+      - KICAD_USER_MODEL_DIR: ${KICAD_USER_LIBRARY}/models
+  time_reformat: false
+
+filters:
+  - name: 'exclude_common'
+    type: 'generic'
+    comment: 'Excludes test points, logos, symbols, and fiducials'
+    exclude_any:
+      - column: Reference
+        regex: '^TP[0-9]*'
+      - column: Reference
+        regex: '^FID'
+      - column: Reference
+        regex: '^LOGO'
+      - column: Reference
+        regex: '^KiKit_'
+      - column: Reference
+        regex: '^kibuzzard-'
+      - column: Reference
+        regex: '^SYM'
+  - name: only_jlc_parts
+    comment: 'Only parts with JLC (LCSC) code'
+    type: generic
+    include_only:
+      - column: 'LCSC'
+        regex: '^C\d+'
+  - name: fix_rotation
+    comment: 'Adjust rotation for JLC'
+    type: rot_footprint
+    rotations:
+      - ["^QFN-28-1EP_6x6mm_P0.65mm_EP4.25x4.25mm", -90.0]
+      - ["^QFN-28_4x4mm_P0.5mm", 0.0]
+      - ["^JST_SH_SM02B-SRSS-TB_1x02-1MP_P1.00mm_Horizontal", 180.0]
+      - ["^JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal", 180.0]
+      - ["^JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal", 180.0]
+      - ["^JST_SH_SM06B-SRSS-TB_1x06-1MP_P1.00mm_Horizontal", 180.0]
+      - ["^JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal", 180.0]
+      - ["^JST_SH_BM02B-SRSS-TB_1x02-1MP_P1.00mm_Vertical", 180.0]
+      - ["^JST_SH_BM03B-SRSS-TB_1x03-1MP_P1.00mm_Vertical", 180.0]
+      - ["^JST_SH_BM04B-SRSS-TB_1x04-1MP_P1.00mm_Vertical", 180.0]
+      - ["^JST_SH_BM06B-SRSS-TB_1x06-1MP_P1.00mm_Vertical", 180.0]
+      - ["^JST_SH_BM08B-SRSS-TB_1x08-1MP_P1.00mm_Vertical", 180.0]
+      - ["^LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm", -90.0]
+      - ["^LED_WS2812B-2020_PLCC4_2.0x2.0mm", 0.0]
+      - ["^SOT-523", 180.0]
+      - ["^SOT-666", -90.0]
+      - ["^XF2M-1415-1A", 180.0]
+      - ["^XF2C_1415-1A", 180.0]
+      # - ["^TI_SO-", 270.0]
+      # - ["^SO-", 270.0]
+      # - ["^HTSSOP-", 270.0]
+      # - ["^SSOP-", 270.0]
+      # - ["^MSOP-", 270.0]
+      # - ["^USB_C_Receptacle_Palconn", 180.0]
+      - ["^SOTFL50P160X60", 270]
+      - ["^SOP65P640X110-20N", -90]
+      - ["^CP_Elec_6.3x7.7", 0]
+      - ["^CP_Elec_6.3x5.4", 0]
+      - ["^CP_Elec_5x5.4", 0]
+      - ["^Bourns_TC33X_Vertical", -90]
+      - ["^LTR-303ALS-01", -90]
+      - ["^PinHeader_2x05_P1.27mm_Vertical",90]
+      - ["^PinHeader_2x05_P1.27mm_Vertical_SMD",90]
+    offsets:
+      - ["^TO-252-2", "3.3,0"]
+      - ["^Converter_ACDC_MeanWell_IRM-10-xx_THT", "-19.2, 5.5"]
+      - ["^GCT_USB4105-GF-A", "0, -2.5"]
+      - ["^ESP32-S3-WROOM-1-N4R2", "0, 3.65"]
+      - ["^ESP32-S3-WROOM-1-N8R2", "0, 3.65"]
+      - ["^ESP32-S3-WROOM-1-N16R2", "0, 3.65"]
+      - ["^XF2C_1415-1A", "0, -0.37"]
+      - ["^XF2M_1415-1A", "0, -0.37"]
+      - ["^PinHeader_2x05_P1.27mm_Vertical","2.54,0.635"]
+      - ["^PinHeader_2x05_P1.27mm_Vertical_SMD","2.54,0.635"]
+
+variants:
+  - name: default
+    comment: 'Just a place holder for the rotation filter'
+    type: kibom
+    variant: default
+  - name: jlcpcb
+    comment: 'JLCPCB requires some rotational transforms'
+    type: kibom
+    variant: jlcpcb
+    pre_transform: fix_rotation
+
+preflight:
+  erc: false
+  update_xml: true
+  drc: false
+  check_zone_fills: true
+
+groups:
+  - name: jlc_fab_4
+    comment: "Generate gerber, bom, and PnP files for JLCPCB"
+    outputs:
+      - create_gerber_4layer
+      - create_drill_file
+      - jlc_bom
+
+outputs:
+  - name: 'create_gerber_4layer'
+    comment: "Generate JLC Gerbers for 4 layer board"
+    run_by_default: false
+    type: gerber
+    dir: gerber
+    options:
+      exclude_edge_layer: true
+      exclude_pads_from_silkscreen: false
+      use_aux_axis_as_origin: true
+      plot_sheet_reference: false
+      plot_footprint_refs: true
+      plot_footprint_values: true
+      force_plot_invisible_refs_vals: false
+      tent_vias: true
+      line_width: 0.1
+      subtract_mask_from_silk: false
+      use_protel_extensions: false
+      gerber_precision: 4.6
+      create_gerber_job_file: true
+      gerber_job_file: '%f-%i%I%v-%r.%x'
+      use_gerber_x2_attributes: false
+      use_gerber_net_attributes: false
+      output: '%f-%r.%i'
+    layers:
+      - layer: F.Cu
+        suffix: GTL
+      - layer: In1.Cu
+        suffix: G2L
+      - layer: In2.Cu
+        suffix: G3L
+      - layer: B.Cu
+        suffix: GBL
+      - layer: F.SilkS
+        suffix: GTO
+      - layer: B.SilkS
+        suffix: GBO
+      - layer: F.Mask
+        suffix: GTS
+      - layer: B.Mask
+        suffix: GBS
+      - layer: Edge.Cuts
+        suffix: GKO
+
+  - name: 'create_drill_file'
+    comment: 'Generate JLC Drill File'
+    run_by_default: false
+    type: excellon
+    dir: gerber
+    options:
+      metric_units: false
+      pth_and_npth_single_file: true
+      use_aux_axis_as_origin: true
+      output: '%f-%i%I%v-%r.%x'
+      map:
+        output: '%f-%i%I%v-%r.%x'
+        type: pdf
+
+  - name: 'create_pnp_jlc'
+    comment: 'Generate JLC PnP File'
+    run_by_default: false
+    type: position
+    dir: pnp
+    options:
+      output: '%f-jlc-cpl-%r.%x'
+      format: CSV
+      units: millimeters
+      separate_files_for_front_and_back: false
+      only_smd: false
+      exclude_filter: 'exclude_common'
+      variant: jlcpcb
+      columns:
+        - id: Ref
+          name: Designator
+        - id: PosX
+          name: "Mid X"
+        - id: PosY
+          name: "Mid Y"
+        - id: Side
+          name: Layer
+        - id: Rot
+          name: Rotation
+
+  - name: 'create_bom'
+    comment: "BOM for JLC"
+    run_by_default: false
+    type: bom
+    dir: pnp
+    options:
+      output: '%f-jlc-bom-%r.%x'
+      ref_separator: ','
+      exclude_filter: 'exclude_common'
+      columns:
+        - field: Value
+          name: Comment
+        - field: References
+          name: Designator
+        - field: Footprint
+          name: Footprint
+        - field: LCSC
+          name: 'LCSC'
+      csv:
+        hide_pcb_info: true
+        hide_stats_info: true
+        quote_all: true
+
+  - name: "create_panel"
+    comment: "Create panelized PCB from specified PCB"
+    type: panelize
+    options:
+      output: '%f-panel-%r.%x'
+      units: mm
+      configs:
+        "panel-options.json"
