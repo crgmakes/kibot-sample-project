@@ -111,7 +111,8 @@ groups:
     outputs:
       - create_gerber_4layer
       - create_drill_file
-      - jlc_bom
+      - create_pnp_jlc
+      - create_bom
 
 outputs:
   - name: 'create_gerber_4layer'
