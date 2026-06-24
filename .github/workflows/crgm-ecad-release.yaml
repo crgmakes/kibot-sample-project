@@ -22,6 +22,9 @@ on:
       container-name:
         required: true
         type: string
+      kicad-version:
+        required: true
+        type: string
 jobs:
   export-ecad:
     name: Export ECAD
