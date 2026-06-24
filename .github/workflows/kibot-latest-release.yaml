@@ -13,14 +13,13 @@ on:
 
 jobs:
   call-export-pcb-latest:
-    uses: ./.github/workflows/crgm-ecad-release.yaml@main
-    with:
+    uses: ./.github/workflows/crgm-ecad-release.yaml
       name: 'Aquarius Client'
       repo-name: aquarius-client-hw
       file-name: aquarius-client-hw
       container-name: ghcr.io/inti-cmnb/kicad9_auto_full:latest
   call-export-pcb-907:
-    uses: ./.github/workflows/crgm-ecad-release.yaml@main
+    uses: ./.github/workflows/crgm-ecad-release.yaml
     with:
       name: 'Aquarius Client'
       repo-name: aquarius-client-hw
