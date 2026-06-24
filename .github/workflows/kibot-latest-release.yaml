@@ -19,10 +19,10 @@ jobs:
   #     repo-name: 'kibot-sample-project'
   #     file-name: 'kibot-sample'
   export-ecad:
-    with:
-      name: 'Kibot Sample Latest'
-      repo-name: 'kibot-sample-project'
-      file-name: 'kibot-sample'
+    # with:
+    name: 'Kibot Sample Latest'
+    repo-name: 'kibot-sample-project'
+    file-name: 'kibot-sample'
     # name: Export ECAD 9.0.7
     runs-on: ubuntu-latest
     container: ghcr.io/inti-cmnb/kicad9_auto_full:latest
