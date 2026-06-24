@@ -12,18 +12,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  # call-export-pcb:
-  #   uses: ./.github/workflows/crgm-ecad-release.yaml
-  #   with:
-  #     name: 'Kibot Sample'
-  #     repo-name: 'kibot-sample-project'
-  #     file-name: 'kibot-sample'
   export-ecad:
     name: Kibot Sample Latest
     runs-on: ubuntu-latest
     container: ghcr.io/inti-cmnb/kicad9_auto_full:latest
     #container: ghcr.io/inti-cmnb/kicad9_auto_full:1.8.5
-    with:
+    env:
       repo-name: 'kibot-sample-project'
       file-name: 'kibot-sample'
 
@@ -36,7 +30,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v6
       with:
-        path: working/${{inputs.repo-name}}
+        path: working/${{env.repo-name}}
 
     - name: Checkout Extras
       uses: actions/checkout@v6
@@ -78,7 +72,7 @@ jobs:
         echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
     - name: Set hash
       run: |
-        cd working/${{inputs.repo-name}}
+        cd working/${{env.repo-name}}
         echo "HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     # Update PCB with version, hash, and date
@@ -87,7 +81,7 @@ jobs:
         echo "Working Directory $(pwd)"
         echo "version: ${{env.VERSION}}"    
         echo "hash: '${{env.HASH}}'"
-        cd working/${{inputs.repo-name}}/pcb
+        cd working/${{env.repo-name}}/pcb
         export RELEASE_DATE=$(date "+%m/%d/%Y @ %H:%M")
         sed -i "s!<<hash>>!${{env.HASH}}!" *.kicad_pcb
         sed -i "s!<<hash>>!${{env.HASH}}!" *.kicad_sch
@@ -100,30 +94,30 @@ jobs:
     - name: Generate Release Fabrication Files
       run: |
         echo "Working Directory: ${GITHUB_WORKSPACE}"
-        cd working/${{inputs.repo-name}}/
-        kibot -c kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4
-        zip -r ${{inputs.file-name}}-${{env.VERSION}}.zip pcb
+        cd working/${{env.repo-name}}/
+        kibot -c kibot/crgm.kibot.yaml -e pcb/${{env.file-name}}.kicad_sch -b pcb/${{env.file-name}}.kicad_pcb -d production jlc_fab_4
+        zip -r ${{env.file-name}}-${{env.VERSION}}.zip pcb
         cd production
-        zip -ur ../${{inputs.file-name}}-${{env.VERSION}}.zip pnp
-        zip -jr ${{inputs.file-name}}-${{env.VERSION}}-gerber.zip gerber
-        zip -u ../${{inputs.file-name}}-${{env.VERSION}}.zip ${{inputs.file-name}}-${{env.VERSION}}-gerber.zip
+        zip -ur ../${{env.file-name}}-${{env.VERSION}}.zip pnp
+        zip -jr ${{env.file-name}}-${{env.VERSION}}-gerber.zip gerber
+        zip -u ../${{env.file-name}}-${{env.VERSION}}.zip ${{env.file-name}}-${{env.VERSION}}-gerber.zip
         cd ..
-        mv ${{inputs.file-name}}-${{env.VERSION}}.zip ../../${{inputs.file-name}}-${{env.VERSION}}.zip
+        mv ${{env.file-name}}-${{env.VERSION}}.zip ../../${{env.file-name}}-${{env.VERSION}}.zip
 
     # generates fab files for the panel PCB, includes gerber, drill, images - does NOT include ibom, 3d model, schematic, or renders
     - name: Generate Panel Release
       run: |
-        cd working/${{inputs.repo-name}}/pcb/panel
+        cd working/${{env.repo-name}}/pcb/panel
         rm -rf production
-        kibot -c ../../kibot/crgm.kibot.yaml -e ../${{inputs.file-name}}.kicad_sch -b ../${{inputs.file-name}}.kicad_pcb -d pcb create_panel
-        cp ../${{inputs.file-name}}.kicad_sch pcb/${{inputs.file-name}}-panel-${{env.VERSION}}.kicad_sch
-        kibot -c ../../kibot/crgm.kibot.yaml -e ../${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}-panel-${{env.VERSION}}.kicad_pcb -d production jlc_fab_4
-        zip -r ${{inputs.file-name}}-panel-${{env.VERSION}}.zip pcb
+        kibot -c ../../kibot/crgm.kibot.yaml -e ../${{env.file-name}}.kicad_sch -b ../${{env.file-name}}.kicad_pcb -d pcb create_panel
+        cp ../${{env.file-name}}.kicad_sch pcb/${{env.file-name}}-panel-${{env.VERSION}}.kicad_sch
+        kibot -c ../../kibot/crgm.kibot.yaml -e ../${{env.file-name}}.kicad_sch -b pcb/${{env.file-name}}-panel-${{env.VERSION}}.kicad_pcb -d production jlc_fab_4
+        zip -r ${{env.file-name}}-panel-${{env.VERSION}}.zip pcb
         cd production
-        zip -jr ${{inputs.file-name}}-panel-gerber-${{env.VERSION}}.zip gerber 
-        zip -ur ../${{inputs.file-name}}-panel-${{env.VERSION}}.zip ${{inputs.file-name}}-panel-gerber-${{env.VERSION}}.zip pnp
+        zip -jr ${{env.file-name}}-panel-gerber-${{env.VERSION}}.zip gerber 
+        zip -ur ../${{env.file-name}}-panel-${{env.VERSION}}.zip ${{env.file-name}}-panel-gerber-${{env.VERSION}}.zip pnp
         cd ..
-        mv ${{inputs.file-name}}-panel-${{env.VERSION}}.zip ../../../../${{inputs.file-name}}-panel-${{env.VERSION}}.zip
+        mv ${{env.file-name}}-panel-${{env.VERSION}}.zip ../../../../${{env.file-name}}-panel-${{env.VERSION}}.zip
 
     # Upload fab artifacts to release
     - name: Upload Release
@@ -132,5 +126,5 @@ jobs:
       with:
         # name: '${{inputs.name}} ${{env.VERSION}}'
         files: |
-          ${{inputs.file-name}}-${{env.VERSION}}.zip
-          ${{inputs.file-name}}-panel-${{env.VERSION}}.zip
+          ${{env.file-name}}-${{env.VERSION}}.zip
+          ${{env.file-name}}-panel-${{env.VERSION}}.zip
