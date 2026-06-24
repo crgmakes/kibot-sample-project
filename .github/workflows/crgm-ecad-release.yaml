@@ -97,100 +97,54 @@ jobs:
         sed -i "s!<<release-date>>!${RELEASE_DATE}!" *.kicad_pcb
         sed -i "s!<<release-date>>!${RELEASE_DATE}!" *.kicad_sch
 
-    # generates draft fab files for the single PCB, includes gerber, drill, ibom, schematic, images, 3d model, and renders
-    - name: Generate Draft Fabrication Files
-      if: github.event_name != 'release'
-      run: |
-        echo "Working Directory: ${GITHUB_WORKSPACE}"
-        cd working/${{inputs.repo-name}}/
-        date
-        #kibot -c ../kicad-extras/kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4 doc 3d
-        kibot -c ../kicad-extras/kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4 doc
-        date
-        cd production
-        zip -jr ${{inputs.file-name}}-gerber.zip gerber
-        cd doc
-        zip -r ../${{inputs.file-name}}.zip *
-        cd ..
-        zip -u ${{inputs.file-name}}.zip ${{inputs.file-name}}-gerber.zip
-        # production now contains ${{inputs.file-name}}.zip
-        mv ${{inputs.file-name}}.zip ../../../${{inputs.file-name}}-${{env.VERSION}}.zip
-        # ${{inputs.file-name}}-${{env.VERSION}}.zip now in home directory
-        date
-
     # generates full fab files for the single PCB, includes gerber, drill, ibom, schematic, images, 3d model, and renders
     - name: Generate Release Fabrication Files
       if: github.event_name == 'release'
       run: |
         echo "Working Directory: ${GITHUB_WORKSPACE}"
         cd working/${{inputs.repo-name}}/
-        date
-        #kibot -c ../kicad-extras/kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4 doc 3d render
-        kibot -c ../kicad-extras/kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4 doc
+        kibot -c ../kicad-extras/kibot/crgm.kibot.yaml -e pcb/${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}.kicad_pcb -d production jlc_fab_4
         zip -r ${{inputs.file-name}}-${{env.VERSION}}.zip pcb
         cd production
-        zip -ur ../${{inputs.file-name}}-${{env.VERSION}}.zip pnp doc
+        zip -ur ../${{inputs.file-name}}-${{env.VERSION}}.zip pnp
         zip -jr ${{inputs.file-name}}-${{env.VERSION}}-gerber.zip gerber
         zip -u ../${{inputs.file-name}}-${{env.VERSION}}.zip ${{inputs.file-name}}-${{env.VERSION}}-gerber.zip
         cd ..
-        mv ${{inputs.file-name}}-${{env.VERSION}}.zip ../../${{inputs.file-name}}-${{env.VERSION}}.zip
-        # ${{inputs.file-name}}-${{env.VERSION}}.zip now in home directory
-        date
+        mv ${{inputs.file-name}}-${{env.VERSION}}.zip ../../${{inputs.file-name}}-${{env.VERSION}}-${{inputs.kicad-version}}.zip
 
-    # only generate panel during a release
     # generates fab files for the panel PCB, includes gerber, drill, images - does NOT include ibom, 3d model, schematic, or renders
     - name: Generate Panel Release
-      # if: github.event_name == 'release'
       run: |
         cd working/${{inputs.repo-name}}/pcb/panel
         rm -rf production
         # create the panelized PCB
-        date
         kibot -c ../../../kicad-extras/kibot/crgm.kibot.yaml -e ../${{inputs.file-name}}.kicad_sch -b ../${{inputs.file-name}}.kicad_pcb -d pcb create_panel
-        # working/${{inputs.repo-name}}/pcb/panel/pcb now contains ${{inputs.file-name}}-panel-${{env.VERSION}}.kicad_pcb
-        # create fab files for panel; does not include renders and 3d model
         cp ../${{inputs.file-name}}.kicad_sch pcb/${{inputs.file-name}}-panel-${{env.VERSION}}.kicad_sch
-        ls -AlF .
-        ls -AlF pcb
         kibot -c ../../../kicad-extras/kibot/crgm.kibot.yaml -e ../${{inputs.file-name}}.kicad_sch -b pcb/${{inputs.file-name}}-panel-${{env.VERSION}}.kicad_pcb -d production panel_ecad_4
         zip -r ${{inputs.file-name}}-panel-${{env.VERSION}}.zip pcb
         cd production
         zip -jr ${{inputs.file-name}}-panel-gerber-${{env.VERSION}}.zip gerber 
-        zip -ur ../${{inputs.file-name}}-panel-${{env.VERSION}}.zip ${{inputs.file-name}}-panel-gerber-${{env.VERSION}}.zip doc pnp
+        zip -ur ../${{inputs.file-name}}-panel-${{env.VERSION}}.zip ${{inputs.file-name}}-panel-gerber-${{env.VERSION}}.zip pnp
         cd ..
-        mv ${{inputs.file-name}}-panel-${{env.VERSION}}.zip ../../../../${{inputs.file-name}}-panel-${{env.VERSION}}.zip
-        # home now contains ${{inputs.file-name}}-panel-${{env.VERSION}}.zip
-        date
+        mv ${{inputs.file-name}}-panel-${{env.VERSION}}.zip ../../../../${{inputs.file-name}}-panel-${{env.VERSION}}-${{inputs.kicad-version}}.zip
 
     # Upload single board fab artifacts to workflow
     - name: Upload Board Artifacts
       if: github.event_name != 'release'
       uses: actions/upload-artifact@v4
       with:
-        name: '${{inputs.name}} ${{env.VERSION}}'
+        name: '${{inputs.name}} ${{env.VERSION}} ${{inputs.kicad-version}}'
         path: |
-          ${{inputs.file-name}}-${{env.VERSION}}.zip
-          ${{inputs.file-name}}-panel-${{env.VERSION}}.zip
+          ${{inputs.file-name}}-${{env.VERSION}}-${{inputs.kicad-version}}.zip
+          ${{inputs.file-name}}-panel-${{env.VERSION}}-${{inputs.kicad-version}}.zip
         if-no-files-found: warn
         retention-days: 10
-
-    # # Upload panel artifacts to workflow
-    # - name: Upload Panel Artifacts
-    #   if: github.event_name == 'release'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     # name: '${{inputs.name}} Panel ${{env.VERSION}}'
-    #     path: |
-    #       ${{inputs.file-name}}-panel-${{env.VERSION}}.zip
-    #     if-no-files-found: warn
-    #     retention-days: 10
 
     # Upload fab artifacts to release
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       if: github.event_name == 'release'
       with:
-        # name: '${{inputs.name}} ${{env.VERSION}}'
         files: |
-          ${{inputs.file-name}}-${{env.VERSION}}.zip
-          ${{inputs.file-name}}-panel-${{env.VERSION}}.zip
+          ${{inputs.file-name}}-${{env.VERSION}}-${{inputs.kicad-version}}.zip
+          ${{inputs.file-name}}-panel-${{env.VERSION}}-${{inputs.kicad-version}}.zip

@@ -14,14 +14,18 @@ on:
 jobs:
   call-export-pcb-latest:
     uses: ./.github/workflows/crgm-ecad-release.yaml
-      name: 'Aquarius Client'
-      repo-name: aquarius-client-hw
-      file-name: aquarius-client-hw
+    with:
+      name: 'Latest Release'
+      repo-name: kibot-sample-project
+      file-name: kibot-sample
       container-name: ghcr.io/inti-cmnb/kicad9_auto_full:latest
+      kicad-version: 9.0.9
+
   call-export-pcb-907:
     uses: ./.github/workflows/crgm-ecad-release.yaml
     with:
-      name: 'Aquarius Client'
-      repo-name: aquarius-client-hw
-      file-name: aquarius-client-hw
+      name: 'Kicad 9.0.7'
+      repo-name: kibot-sample-project
+      file-name: kibot-sample
       container-name: ghcr.io/inti-cmnb/kicad9_auto_full:1.8.5
+      kicad-version: 9.0.7
